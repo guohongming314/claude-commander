@@ -1,0 +1,74 @@
+{
+  "run_id": "{{RUN_ID}}",
+  "goal": "{{GOAL}}",
+  "schema_version": 1,
+  "budgets": {
+    "max_concurrent_total": 3,
+    "max_concurrent_by_role": {
+      "researcher": 1,
+      "spec": 1,
+      "implementer": 2,
+      "reviewer": 1,
+      "test": 1,
+      "integrator": 1
+    },
+    "max_launched_per_phase": 5,
+    "max_launched_per_run_before_reapproval": 8,
+    "max_first_dag_leaf_implementation_tasks": 6,
+    "max_ready_tasks_launched_at_once": 2,
+    "same_role_reuse_required": true,
+    "requires_user_approval_to_exceed": true
+  },
+  "states": [
+    "planned",
+    "ready",
+    "running",
+    "blocked_waiting_input",
+    "blocked_failed_check",
+    "succeeded_unreviewed",
+    "review_failed_revise",
+    "review_passed",
+    "merged_local",
+    "failed_abort"
+  ],
+  "tasks": [
+    {
+      "task_id": "R001-reference-brief",
+      "role": "researcher",
+      "phase": 1,
+      "consumes_agent_budget": false,
+      "budget_note": "Use WebSearch/WebFetch in main context first; launch at most one researcher agent only if needed.",
+      "state": "planned",
+      "depends_on": [],
+      "runtime": "main-or-single-researcher",
+      "file_claims": {
+        "owned": ["<run>/references/reference-brief.md"],
+        "shared": [],
+        "read_only": ["<repo>", "public references"],
+        "forbidden": ["credentials", "production systems"]
+      },
+      "acceptance_criteria": ["Reference brief exists or skip reason is documented"],
+      "verification": ["Commander reviews references/reference-brief.md"],
+      "retry_limit": 1
+    },
+    {
+      "task_id": "S001-spec-and-dag",
+      "role": "spec",
+      "phase": 1,
+      "consumes_agent_budget": false,
+      "budget_note": "Do in main Commander context unless spec work exceeds current context capacity.",
+      "state": "planned",
+      "depends_on": ["R001-reference-brief"],
+      "runtime": "main-or-single-spec-agent",
+      "file_claims": {
+        "owned": ["<run>/specs/spec.md", "<run>/tasks/task-dag.json"],
+        "shared": [],
+        "read_only": ["<repo>"],
+        "forbidden": ["repo writes before worker launch"]
+      },
+      "acceptance_criteria": ["Spec and DAG define implementable worker tasks with file claims, budget plan, and verification"],
+      "verification": ["Commander reviews specs/spec.md and tasks/task-dag.json"],
+      "retry_limit": 1
+    }
+  ]
+}
